@@ -1,8 +1,10 @@
-from discord.ext import commands, tasks
 import os
-import discord
 from dataclasses import dataclass
+import discord
+from discord.ext import commands, tasks
 
+
+# TODO: figure out dotenv for direnv and type when reading from env var
 BOT_TOKEN = os.environ["BOT_TOKEN"]
 CHANNEL_ID = os.environ["CHANNEL_ID"]
 
