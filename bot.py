@@ -4,7 +4,8 @@ from datetime import time, datetime, timedelta
 import discord
 from discord.ext import commands, tasks
 from customexceptions import ValidationError
-
+# TODO: figure out pylint in Github Actions failures
+# TODO: VSCode warning: You are connected toan OS version that is unsupported by VSCode
 
 # TODO: figure out dotenv for direnv and type when reading from env var
 BOT_TOKEN = os.environ["BOT_TOKEN"]
@@ -66,7 +67,8 @@ async def hello(ctx):
     print("Sent hello")
 
 
-# TODO: set interval to be large but it updates to shorter as time gets closer; also set the interval based on how close bedtime is on inital start
+# TODO: set interval to be large but it updates to shorter as time gets closer
+# TODO: also set the interval based on how close bedtime is on inital start
 @tasks.loop(minutes=1)
 async def TimeCheckLoop():
     session.executions += 1
@@ -81,7 +83,8 @@ async def TimeCheckLoop():
 async def before_TimeCheckLoop():
     print('starting TimeCheckLoop...')
     await bot.wait_until_ready()
-    await session.channel.send(f"Starting sleeptime bot: Sleep time set to {session.sleep_time} {session.time_zone}\nRemaining time: {timedelta(seconds=seconds_remaining())}")
+    await session.channel.send(f"""Starting sleeptime bot: Sleep time set to {session.sleep_time} {session.time_zone}\n
+                               Remaining time: {timedelta(seconds=seconds_remaining())}""")
 
 
 @TimeCheckLoop.after_loop
@@ -107,7 +110,8 @@ def time_seconds(t):
 @bot.command()
 async def start(ctx):
     if TimeCheckLoop.is_running():
-        await ctx.send(f"Process has already started. Next execution time is: {TimeCheckLoop.next_iteration.astimezone(session.tz).strftime(session.strftime)} {session.time_zone}")
+        next_it_time = TimeCheckLoop.next_iteration.astimezone(session.tz).strftime(session.strftime)
+        await ctx.send(f"Process has already started. Next execution time is: {next_it_time} {session.time_zone}")
     else:
         TimeCheckLoop.start()
         session.enabled = True
