@@ -15,7 +15,7 @@ class Session:
     # sleep_hour: int = 23
     trigger_dow: str = "MTWRF"  # TODO: implement command & logic for this
     tz: object = None
-    kill_method: KillMethod = KillMethod.All
+    kill_method: KillMethod = KillMethod.ALL
     executions: int = 0
     kills: int = 0
     strftime: str = "%Y-%m-%d %H:%M:%S"
