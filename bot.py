@@ -21,7 +21,7 @@ GUILD_ID = int(os.environ['GUILD_ID'])
 # Sets up the Bot commands
 #   command_prefix: the denoter for what the command starts with for this bot
 #   intents: idk
-bot = commands.Bot(command_prefix="!", description="Bedtime Bot", intents=discord.Intents.all())
+bot = commands.Bot(command_prefix="!", description="Channel Bedtime Bot", intents=discord.Intents.all())
 session = Session()
 logger = Logger("bedtime_bot", "discord.log", stdout=True)
 
