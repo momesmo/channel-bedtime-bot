@@ -23,7 +23,7 @@ GUILD_ID = int(os.environ['GUILD_ID'])
 #   intents: idk
 bot = commands.Bot(command_prefix="!", description="Channel Bedtime Bot", intents=discord.Intents.all())
 session = Session()
-logger = Logger("bedtime_bot", "discord.log", stdout=True)
+logger = Logger("bedtime_bot", filename="discord.log", stdout=True)
 
 
 @bot.event

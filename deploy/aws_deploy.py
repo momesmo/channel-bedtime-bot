@@ -1,9 +1,11 @@
 import boto3
 import argparse
 import os
+from logger import Logger
 
 deploy = False
 force = False
+logger = Logger.new("aws_deploy", stdout=True)
 
 
 def create_arg_parser():
@@ -32,13 +34,13 @@ def action_check(args):
 
 def validate_args(args):
     if args.action == "create":
-        print("create" + " TEST" if deploy else "")
+        logger.debug("create" + " TEST" if deploy else "")
     elif args.action == "update":
-        print("update" + " TEST" if deploy else "")
+        logger.debug("update" + " TEST" if deploy else "")
     elif args.action == "delete":
-        print("delete" + " TEST" if deploy else "")
+        logger.debug("delete" + " TEST" if deploy else "")
     elif args.list_and_update:
-        print("list_and_update")
+        logger.debug("list_and_update")
     else:
         return False
 
@@ -75,7 +77,7 @@ def create_ec2_instance(region, profile, tag):
 if __name__ == "__main__":
     arg_parser = create_arg_parser()
     args = arg_parser.parse_args()
-    print(f"args action: {args}")
+    logger.debug(f"args action: {args}")
     if not validate_args(args):
         arg_parser.print_help()
         exit(1)
