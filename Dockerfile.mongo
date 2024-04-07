@@ -1,0 +1,10 @@
+FROM mongo
+
+# Copy the MongoDB configuration file
+COPY mongodb.conf /etc/mongod.conf
+
+# Expose the default MongoDB port
+EXPOSE 27017
+
+# Start MongoDB with the custom configuration
+CMD ["mongod", "--config", "/etc/mongod.conf"]
