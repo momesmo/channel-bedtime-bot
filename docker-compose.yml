@@ -1,12 +1,26 @@
 version: '3.7'
 services:
-  app:
+  mongo:
+  # TODO: look into for initialization: https://stackoverflow.com/questions/42912755/how-to-create-a-db-for-mongodb-container-on-start-up
     build:
-      context: .
+      context: mongo
+      dockerfile: Dockerfile.mongo
+    volumes:
+      - /sys/fs/cgroup:/sys/fs/cgroup:rw
     tty: true
     cgroup: host
     cap_add:
       - SYS_ADMIN
       - NET_ADMIN
-    volumes:
-      - /sys/fs/cgroup:/sys/fs/cgroup:rw
+    env_file:
+      - .envrc
+    ports:
+      - 27017:27017
+  bot:
+    build:
+      context: bot
+      dockerfile: Dockerfile
+    env_file:
+      - .envrc
+    depends_on:
+      - mongo
