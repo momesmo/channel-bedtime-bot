@@ -1,5 +1,8 @@
 import os
 from datetime import datetime, timedelta
+import json
+import random
+from collections import defaultdict
 import discord
 from discord import app_commands
 from discord.ext import commands, tasks
@@ -41,6 +44,9 @@ async def on_ready():
     # embed.add_field(name="Channels", value=len([x for x in bot.get_all_channels()]))
     # await session.channel.send(embed=embed)
     logger.info("Channel Bedtime bot initialized.")
+# TODO: REMOVE THIS IS FOR TESTING
+    await kill_task(KillMethod.ALL)
+    pass
 
 
 # TODO: set interval to be large but it updates to shorter as time gets closer
@@ -51,7 +57,7 @@ async def TimeCheckLoop():
     # TODO: on time pass do something
     now_time = datetime.now().time()
     if session.scheduled_in_past:
-        logger.info(f"TimeCheckLoop: scheduled in past Now: {now_time} Sleep: {session.sleep_time}. Skipping...")
+        logger.info(f"TimeCheckLoop: scheduled in past Now: {now_time} Bedtime: {session.sleep_time}. Skipping...")
         if now_time <= session.sleep_time:
             logger.info("TimeCheckLoop: no longer scheduled in past. Resetting scheduled_in_past...")
             session.scheduled_in_past = False
@@ -59,24 +65,56 @@ async def TimeCheckLoop():
         await session.channel.send(f"Time to sleep has passed: {session.sleep_time} {session.time_zone}")
         session.scheduled_in_past = True
         # TODO: call KillLoop
-        # await kill_task(session.kill_method)
+        await kill_task(session.kill_method)
         logger.info("TimeCheckLoop: triggered. Time to sleep has passed.")
 
 
 async def kill_task(kill_type=None):
     match kill_type:
         case KillMethod.ALL:
-            await session.channel.send("KillLoop: Killing with all method.")
+            logger.info("KillLoop: Killing with all method.")
+            voice_member_dict = get_all_users_in_active_voice_channels()
+            for channel, members in voice_member_dict.items():
+                for member in members:
+                    await disconnect_member(member)
+            logger.info("KillLoop: Done!\n"
+                        f"{dict((k, [x.nick for x in v]) for k, v in voice_member_dict.items())}")
+
         case KillMethod.ALLBUTONE:
-            await session.channel.send("KillLoop: Killing with all but one method.")
+            logger.info("KillLoop: Killing with all but one method.")
+            voice_member_dict = get_all_users_in_active_voice_channels()
+            disconnected_channel_members = {k: random.choice(v) for k, v in voice_member_dict.items() if len(v) > 1}
+            for channel, member in disconnected_channel_members.items():
+                await disconnect_member(member)
+            logger.info("KillLoop: Done!\n"
+                        f"{dict((k, v) for k, v in disconnected_channel_members.items())}")
         case KillMethod.TRICKLE:
-            await session.channel.send("KillLoop: Killing with trickle method.")
+            logger.info("KillLoop: Killing with trickle method.")
+
+        case KillMethod.HALF:
+            logger.info("KillLoop: Killing with half method.")
+
+        case KillMethod.RANDOMAMOUNT:
+            logger.info("KillLoop: Killing with random amount method.")
+
         case KillMethod.RANDOM:
-            await session.channel.send("KillLoop: Choosing random kill method.")
+            logger.info("KillLoop: Choosing random kill method.")
             kill_task(KillMethod.random_value())
         case _:
-            await session.channel.send("ERROR: KillLoop: No kill method set. Skipping...")
             logger.error("KillLoop: No kill method set. Skipping...")
+
+
+async def disconnect_member(member):
+    await member.move_to(None)
+
+
+def get_all_users_in_active_voice_channels():
+    channel_users_dict = defaultdict(lambda: [])
+    voice_channels = [x for x in bot.get_all_channels() if isinstance(x, discord.VoiceChannel)]
+    for channel in voice_channels:
+        for member in channel.members:
+            channel_users_dict[str(channel)].append(member)
+    return channel_users_dict
 
 
 @TimeCheckLoop.before_loop
@@ -84,7 +122,7 @@ async def before_TimeCheckLoop():
     logger.info('starting TimeCheckLoop...')
     await bot.wait_until_ready()
     await session.channel.send(f"Starting sleeptime bot: Sleep time set to {session.sleep_time} {session.time_zone}\n"
-                               f"Remaining time: {timedelta(seconds=seconds_remaining())}")
+                               f"Remaining time: {output_timestamp_remaining()}")
 
 
 @TimeCheckLoop.after_loop
@@ -94,6 +132,10 @@ async def after_TimeCheckLoop():
 
 
 # Before loop helpers
+def time_seconds(t):
+    return (t.hour * 60) + (t.minute * 60) + t.second
+
+
 def seconds_remaining():
     now_time_secs = time_seconds(datetime.now().time())
     sleep_time_secs = time_seconds(session.sleep_time)
@@ -102,8 +144,8 @@ def seconds_remaining():
     return sleep_time_secs - now_time_secs
 
 
-def time_seconds(t):
-    return (t.hour * 60) + (t.minute * 60) + t.second
+def output_timestamp_remaining():
+    return timedelta(seconds=seconds_remaining())
 ########
 
 
@@ -116,7 +158,8 @@ async def start(ctx):
         return
     if TimeCheckLoop.is_running():
         next_it_time = TimeCheckLoop.next_iteration.astimezone(session.tz).strftime(session.strftime)
-        await ctx.send(f"Process is already running. Next execution time is: {next_it_time} {session.time_zone}")
+        await ctx.send(f"Process is already running. Next execution time is: {next_it_time} {session.time_zone}\n"
+                       f"Remaining time: {output_timestamp_remaining()}")
     else:
         TimeCheckLoop.start()
         session.enabled = True
@@ -152,7 +195,13 @@ async def bedtime(ctx, *, flags: BedtimeFlags):
                 reason="Providing Bedtime Warning",
                 type=discord.ChannelType.public_thread)
             await thread.send(warning)
-        await ctx.send(f"Bedtime set to: {session.sleep_time} {session.time_zone}")
+        msg_add = ""
+        if session.enabled:
+            msg_add = f"Process is running. Remaining time: {output_timestamp_remaining()}"
+        else:
+            msg_add = f"Process is not running. Remaining time if started now: {output_timestamp_remaining()}"
+        await ctx.send(f"Bedtime set to: {session.sleep_time} {session.time_zone}\n"
+                       f"{msg_add}")
     except ValidationError as e:
         await ctx.send(f"Bedtime could not be set due to incorrect input: {flags.__dict__}\nError: {e.message}")
         logger.error("Bedtime could not be set due to incorrect input: %s. Error: %s" % (flags.__dict__, e.message))
