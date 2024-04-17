@@ -18,6 +18,7 @@ from logger import Logger
 BOT_TOKEN = os.environ['BOT_TOKEN']
 CHANNEL_ID = int(os.environ['CHANNEL_ID'])
 GUILD_ID = int(os.environ['GUILD_ID'])
+PANTRY_KEY = os.environ['PANTRY_KEY']
 
 
 # Sets up the Bot commands
