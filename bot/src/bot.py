@@ -46,7 +46,13 @@ async def on_ready():
     logger.info("Channel Bedtime bot initialized.")
 # TODO: REMOVE THIS IS FOR TESTING
     await kill_task(KillMethod.ALL)
-    pass
+    # pass
+
+##### POST-MVP #####
+# TODO: create stats method to display stats after stop method and kill method, bedtime set, etc. Can make it an Embed
+# TODO: add timeout functionality
+# TODO: add timeout user from using commands after adding multi-guild and db
+# TODO: lock commands to only members in voice channel
 
 
 # TODO: set interval to be large but it updates to shorter as time gets closer
@@ -208,10 +214,6 @@ async def bedtime(ctx, *, flags: BedtimeFlags):
     except ValueError as e:
         await ctx.send(f"Bedtime could not be set due to incorrect input: {flags.__dict__}\nError: {e}")
         logger.error("Bedtime could not be set due to incorrect input: %s. Error: %s" % (flags.__dict__, e))
-
-# TODO: create kill method command
-# TODO: create stats method to display stats after stop method and kill method, bedtime set, etc. Can make it an Embed
-
 
 if __name__ == "__main__":
     # Running the bot
