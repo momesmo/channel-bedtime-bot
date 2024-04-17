@@ -1,3 +1,6 @@
+"""
+This module contains the logger class.
+"""
 import os
 import sys
 import logging
@@ -6,6 +9,9 @@ from customexceptions import LoggerError
 
 
 class Logger(logging.Logger):
+    """
+    This class represents a custom logger.
+    """
     def __init__(self, name: str, filename: str = "", level: int = logging.DEBUG, stdout: bool = False) -> None:
         super().__init__(name, level)
         if not filename and not stdout:
@@ -25,4 +31,4 @@ class Logger(logging.Logger):
 
 
 if __name__ == "__main__":
-    log = Logger('test')
+    logger = Logger("test_logger", filename="test.log", stdout=True)

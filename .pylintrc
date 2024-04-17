@@ -1,0 +1,8 @@
+[FORMAT]
+max-line-length=150 # Maximum line length in characters
+
+[DESIGN]
+max-attributes=15 # Maximum number of attributes in a class
+
+[MISC]
+notes = [] # Removing fixme error, original: ["FIXME", "XXX", "TODO"]
