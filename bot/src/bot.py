@@ -309,7 +309,7 @@ async def bedtime(ctx, *, flags: BedtimeFlags):
         if session.sleep_time < datetime.now().time():
             session.scheduled_in_past = True
             logger.info("Bedtime scheduled in past. Setting scheduled_in_past to True.")
-        if warning:
+        if warning and warning != "Valid input.":
             thread = await session.channel.create_thread(
                 name="Bedtime Warning",
                 auto_archive_duration=60,

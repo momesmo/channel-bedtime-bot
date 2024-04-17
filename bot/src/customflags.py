@@ -23,6 +23,7 @@ class BedtimeFlags(commands.FlagConverter):
             raise ValidationError("Invalid input. Must provide time in format 23:00:00 or 23:00 or hour parameters (minute and second defaults to 0)")
         if self.time_str and (self.hour != 0 or self.minute != 0 or self.second != 0):
             return "Warning: Provided time_str overrides hour, minute, second parameters."
+        return "Valid input."
 
     def get_time(self):
         """
