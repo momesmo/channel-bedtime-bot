@@ -10,9 +10,9 @@ from datetime import datetime, timedelta
 # import json
 import random
 from collections import defaultdict
-import discord
-from discord import app_commands
-from discord.ext import commands, tasks
+from discord import app_commands, Intents, Object as DiscordObject, Embed, VoiceChannel, ChannelType, Game, Status
+from discord.ext import tasks
+from discord.ext.commands import Bot
 
 from customflags import BedtimeFlags
 from customexceptions import ValidationError
@@ -31,10 +31,14 @@ PANTRY_KEY = os.environ['PANTRY_KEY']
 # Sets up the Bot commands
 #   command_prefix: the denoter for what the command starts with for this bot
 #   intents: idk
-bot = commands.Bot(command_prefix="!", description="Channel Bedtime Bot", intents=discord.Intents.all())
+bot = Bot(command_prefix="!", description="Channel Bedtime Bot", intents=Intents.all())
 session = Session()
 logger = Logger("bedtime_bot", filename="discord.log", stdout=True)
 
+
+def bot_activity():
+    return Game(name="https://github.com/momesmo/channel-bedtime-bot",
+                type=1, url="https://github.com/momesmo/channel-bedtime-bot")
 
 @bot.event
 async def on_ready():
@@ -50,9 +54,10 @@ async def on_ready():
         None
     """
     session.channel = bot.get_channel(CHANNEL_ID)
-    await bot.tree.sync(guild=discord.Object(GUILD_ID))
-    await session.channel.send("Hello! Channel Bedtime bot is ready!")
-    # embed = discord.Embed(
+    await bot.tree.sync(guild=DiscordObject(GUILD_ID))
+    await session.channel.send(f"Hello! {bot.user} is now running!")
+    await bot.change_presence(activity=bot_activity(), status=Status.idle)
+    # embed = Embed(
     #         type="rich",
     #         title="Hello! Channel Bedtime bot is ready!",
     #        description="This bot will help you set your sleep time. "\
@@ -65,7 +70,7 @@ async def on_ready():
     # await session.channel.send(embed=embed)
     logger.info("Channel Bedtime bot initialized.")
 # TODO: REMOVE THIS IS FOR TESTING
-    await kill_task(KillMethod.ALL)
+    # await kill_task(KillMethod.ALL)
     # pass
 
 ##### POST-MVP #####
@@ -160,7 +165,7 @@ def get_all_users_in_active_voice_channels():
     :rtype: defaultdict(list)
     """
     channel_users_dict = defaultdict(lambda: [])
-    voice_channels = [x for x in bot.get_all_channels() if isinstance(x, discord.VoiceChannel)]
+    voice_channels = [x for x in bot.get_all_channels() if isinstance(x, VoiceChannel)]
     for channel in voice_channels:
         for member in channel.members:
             channel_users_dict[str(channel)].append(member)
@@ -229,7 +234,7 @@ def output_timestamp_remaining():
 
 
 @bot.hybrid_command(name='start', description='Start bedtime bot')
-@app_commands.guilds(discord.Object(GUILD_ID))
+@app_commands.guilds(DiscordObject(GUILD_ID))
 async def start(ctx):
     """
     A command that starts the bedtime bot.
@@ -250,13 +255,14 @@ async def start(ctx):
                        f"Remaining time: {output_timestamp_remaining()}")
     else:
         time_check_loop.start()
+        # await bot.change_presence(activity=bot_activity(), status=Status.online)
         session.enabled = True
         await ctx.send("Process has been started.")
         logger.info("Process has been started.")
 
 
 @bot.hybrid_command(name='stop', description='Stop bedtime bot')
-@app_commands.guilds(discord.Object(GUILD_ID))
+@app_commands.guilds(DiscordObject(GUILD_ID))
 async def stop(ctx):
     """
     Stop the bedtime bot.
@@ -275,12 +281,13 @@ async def stop(ctx):
         await ctx.send("Process was not running.")
     else:
         time_check_loop.cancel()
+        # await bot.change_presence(activity=bot_activity(), status=Status.idle)
         await ctx.send("Process has been canceled.")
         logger.info("Process has been canceled.")
 
 
 @bot.hybrid_command(name='bedtime', description='Set sleep time for bedtime bot')
-@app_commands.guilds(discord.Object(GUILD_ID))
+@app_commands.guilds(DiscordObject(GUILD_ID))
 async def bedtime(ctx, *, flags: BedtimeFlags):
     """
     Set sleep time for bedtime bot.
@@ -314,7 +321,7 @@ async def bedtime(ctx, *, flags: BedtimeFlags):
                 name="Bedtime Warning",
                 auto_archive_duration=60,
                 reason="Providing Bedtime Warning",
-                type=discord.ChannelType.public_thread)
+                type=ChannelType.public_thread)
             await thread.send(warning)
         msg_add = ""
         if session.enabled:
