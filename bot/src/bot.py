@@ -21,12 +21,13 @@ from session import Session
 from logger import Logger
 # TODO: figure out pylint in Github Actions failures
 
-# TODO: figure out dotenv for direnv and type when reading from env var
+# TODO: figure out dotenv for direnv
 BOT_TOKEN = os.environ['BOT_TOKEN']
 CHANNEL_ID = int(os.environ['CHANNEL_ID'])
 GUILD_ID = int(os.environ['GUILD_ID'])
 PANTRY_KEY = os.environ['PANTRY_KEY']
 
+# Reference: https://www.youtube.com/@richardschwabe/videos
 
 # Sets up the Bot commands
 #   command_prefix: the denoter for what the command starts with for this bot
@@ -54,9 +55,11 @@ async def on_ready():
         None
     """
     session.channel = bot.get_channel(CHANNEL_ID)
-    await bot.tree.sync(guild=DiscordObject(GUILD_ID))
-    await session.channel.send(f"Hello! {bot.user} is now running!")
+    await bot.tree.sync()
     await bot.change_presence(activity=bot_activity(), status=Status.idle)
+    await session.channel.send(f"Hello! {bot.user} is now running!")
+    '''
+    TODO: Embedded message, still testing
     # embed = Embed(
     #         type="rich",
     #         title="Hello! Channel Bedtime bot is ready!",
@@ -68,7 +71,8 @@ async def on_ready():
     # embed.add_field(name="Members", value=len([x for x in bot.get_all_members()]))
     # embed.add_field(name="Channels", value=len([x for x in bot.get_all_channels()]))
     # await session.channel.send(embed=embed)
-    logger.info("Channel Bedtime bot initialized.")
+    '''
+    logger.info("Channel Bedtime bot initialized. User: %s (Id: %s)", bot.user, bot.user.id)
 # TODO: REMOVE THIS IS FOR TESTING
     # await kill_task(KillMethod.ALL)
     # pass
@@ -94,7 +98,6 @@ async def time_check_loop():
         None
     """
     session.executions += 1
-    # TODO: on time pass do something
     now_time = datetime.now().time()
     if session.scheduled_in_past:
         logger.info("TimeCheckLoop: scheduled in past Now: %s Bedtime: %s. Skipping...", now_time, session.sleep_time)
@@ -104,7 +107,6 @@ async def time_check_loop():
     elif now_time >= session.sleep_time:
         await session.channel.send(f"Time to sleep has passed: {session.sleep_time} {session.time_zone}")
         session.scheduled_in_past = True
-        # TODO: call KillLoop
         await kill_task(session.kill_method)
         logger.info("TimeCheckLoop: triggered. Time to sleep has passed.")
 
@@ -233,8 +235,8 @@ def output_timestamp_remaining():
 ########
 
 
-@bot.hybrid_command(name='start', description='Start bedtime bot')
-@app_commands.guilds(DiscordObject(GUILD_ID))
+@bot.hybrid_command(name='start', description='Starts bedtime bot')
+# @app_commands.guilds(DiscordObject(GUILD_ID))
 async def start(ctx):
     """
     A command that starts the bedtime bot.
@@ -261,8 +263,8 @@ async def start(ctx):
         logger.info("Process has been started.")
 
 
-@bot.hybrid_command(name='stop', description='Stop bedtime bot')
-@app_commands.guilds(DiscordObject(GUILD_ID))
+@bot.hybrid_command(name='stop', description='Stops bedtime bot')
+# @app_commands.guilds(DiscordObject(GUILD_ID))
 async def stop(ctx):
     """
     Stop the bedtime bot.
@@ -286,8 +288,8 @@ async def stop(ctx):
         logger.info("Process has been canceled.")
 
 
-@bot.hybrid_command(name='bedtime', description='Set sleep time for bedtime bot')
-@app_commands.guilds(DiscordObject(GUILD_ID))
+@bot.hybrid_command(name='bedtime', description='Sets sleep time for bedtime bot')
+# @app_commands.guilds(DiscordObject(GUILD_ID))
 async def bedtime(ctx, *, flags: BedtimeFlags):
     """
     Set sleep time for bedtime bot.
@@ -336,6 +338,24 @@ async def bedtime(ctx, *, flags: BedtimeFlags):
     except ValueError as e:
         await ctx.send(f"Bedtime could not be set due to incorrect input: {flags.__dict__}\nError: {e}")
         logger.error("Bedtime could not be set due to incorrect input: %s. Error: %s", flags.__dict__, e)
+
+
+# TODO: finish implementation (not synced to guild since I removed the guild parameters)
+@bot.hybrid_command(name='vote', description='Creates poll for bedtime')
+async def vote(ctx):
+    """
+    Vote for bedtime.
+
+    Parameters:
+        ctx (Context): The context object representing the invocation context.
+
+    Returns:
+        None
+
+    This function votes for bedtime. It sends a message to the context object indicating that the vote has been received.
+    """
+    await ctx.send("Vote received.")
+
 
 if __name__ == "__main__":
     # Running the bot

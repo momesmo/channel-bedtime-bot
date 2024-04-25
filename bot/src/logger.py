@@ -8,6 +8,8 @@ import logging.handlers
 from customexceptions import LoggerError
 
 
+# TODO: redo logger with discord integration reference: https://www.youtube.com/watch?v=ilNStiHY0Io&list=PLESMQx4LeD3N0-KKPPDaToZhBsom2E_Ju&index=3
+# better explanation and structure reference: https://www.youtube.com/watch?v=9L77QExPmI0
 class Logger(logging.Logger):
     """
     This class represents a custom logger.
