@@ -1,0 +1,38 @@
+# TODO: create testcontainers test.py ci build: https://www.atomicjar.com/2023/06/running-testcontainers-tests-using-github-actions/
+name: IntTest - Develop
+
+on:
+  push:
+    branches:
+      - develop
+    paths-ignore:
+      - "deploy/**"
+
+jobs:
+  build:
+    name: Integration Test
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+
+      - name: Set up Python 3.12
+        uses: actions/setup-python@v4
+        with:
+          python-version: 3.12
+
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          if [ -f bot/requirements.txt ]; then pip install -r bot/requirements.txt; fi
+        
+      - name: Setup Testcontainers Cloud Client
+        uses: atomicjar/testcontainers-cloud-setup-action@v1
+        with:
+          token: ${{ secrets.TC_CLOUD_TOKEN }}
+# TODO: not ready
+      - name: Integration Test
+        run: |
+          cd bot/src
+          python -m unittest discover
+
+      
