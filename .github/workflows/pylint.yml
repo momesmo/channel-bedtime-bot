@@ -22,4 +22,4 @@ jobs:
         if [ -f bot/requirements.txt ]; then pip install -r bot/requirements.txt; fi
     - name: Analysing the code with pylint
       run: |
-        pylint $(git ls-files '*.py')
+        pylint --fail-under 8 $(git ls-files '*.py')
