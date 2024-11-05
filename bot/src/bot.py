@@ -19,6 +19,7 @@ from customexceptions import ValidationError
 from customenums import KillMethod
 from session import Session
 from logger import Logger
+from mongo import Mongo
 # TODO: figure out pylint in Github Actions failures
 
 # TODO: figure out dotenv for direnv
@@ -26,6 +27,9 @@ BOT_TOKEN = os.environ['BOT_TOKEN']
 CHANNEL_ID = int(os.environ['CHANNEL_ID'])
 GUILD_ID = int(os.environ['GUILD_ID'])
 PANTRY_KEY = os.environ['PANTRY_KEY']
+MONGO_HOST = os.environ['MONGO_HOST']
+MONGO_PORT = int(os.environ['MONGO_PORT'])
+MONGO_DB = os.environ['MONGO_DB']
 
 # Reference: https://www.youtube.com/@richardschwabe/videos
 
@@ -33,6 +37,7 @@ PANTRY_KEY = os.environ['PANTRY_KEY']
 #   command_prefix: the denoter for what the command starts with for this bot
 #   intents: idk
 bot = Bot(command_prefix="!", description="Channel Bedtime Bot", intents=Intents.all())
+mongo = Mongo(host=MONGO_HOST, port=MONGO_PORT, db=MONGO_DB)
 session = Session()
 logger = Logger("bedtime_bot", filename="discord.log", stdout=True)
 
@@ -40,6 +45,11 @@ logger = Logger("bedtime_bot", filename="discord.log", stdout=True)
 def bot_activity():
     return Game(name="https://github.com/momesmo/channel-bedtime-bot",
                 type=1, url="https://github.com/momesmo/channel-bedtime-bot")
+
+@bot.event
+async def on_guild_join(guild):
+    mongo.create_or_update_guild(guild.id, {'guild_id': guild.id, 'name': guild.name, 'channel_id': guild.id})
+
 
 @bot.event
 async def on_ready():

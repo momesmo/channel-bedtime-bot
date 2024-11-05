@@ -106,6 +106,6 @@ class PantryClient:
 
 
 if __name__ == "__main__":
-    k = "ed9db9c6-03f2-47ed-8fa9-f9644c650f53"
+    k = '93220a99-f6bb-4adc-9018-c90e8b10a5eb'
     pc = PantryClient(k)
-    r = pc.append_basket('testBasket', {'new_key': 'new_value'})
+    # r = pc.append_basket('testBasket', {'new_key': 'new_value'})

@@ -1,13 +1,30 @@
-# import pymongo
-# from customexceptions import MongoError
+"""
+This module contains the Mongo class.
+"""
+import pymongo
+from customexceptions import MongoError
 
 
-# class Mongo:
+class Mongo:
+    """
+    This class represents the Mongo client.
+    """
+    def __init__(self, host="localhost", port=27017, db="bedtime_bot"):
+        self.client = pymongo.MongoClient(host, port)
+        self.db = self.client[db]
+        # self.collection = self.db[collection]
 
-#     def __init__(self, host="localhost", port=27017, db="bedtime_bot", collection="guilds"):
-#         self.client = pymongo.MongoClient(host, port)
-#         self.db = self.client[db]
-#         self.collection = self.db[collection]
+    def get_collection(self, collection):
+        return self.db[collection]
+    
+    def get_guild_data(self, guild_id):
+        return self.get_collection('guilds').find_one({'guild_id': guild_id})
+    
+    def update_guild_data(self, guild_id, data):
+        return self.get_collection('guilds').update_one({'guild_id': guild_id}, {'$set': data}, upsert=True)
+    
+    def delete_guild_data(self, guild_id):
+        return self.get_collection('guilds').delete_one({'guild_id': guild_id})
 
 #     def get_db(self):
 #         return self.db
