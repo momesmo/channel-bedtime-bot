@@ -10,25 +10,28 @@ from datetime import datetime, timedelta
 # import json
 import random
 from collections import defaultdict
-from discord import app_commands, Intents, Object as DiscordObject, Embed, VoiceChannel, ChannelType, Game, Status
+from discord import app_commands, Intents, Object as DiscordObject, Embed, VoiceChannel, ChannelType, Game, Status, utils as discord_utils
 from discord.ext import tasks
 from discord.ext.commands import Bot
 
-from customflags import BedtimeFlags
+from customflags import BedtimeFlags, SetChannelFlags
 from customexceptions import ValidationError
 from customenums import KillMethod
 from session import Session
 from logger import Logger
-from mongo import Mongo
+from mongo_client import MongoClient
+
 # TODO: figure out pylint in Github Actions failures
 
 # TODO: figure out dotenv for direnv
 BOT_TOKEN = os.environ['BOT_TOKEN']
-CHANNEL_ID = int(os.environ['CHANNEL_ID'])
-GUILD_ID = int(os.environ['GUILD_ID'])
+# CHANNEL_ID = int(os.environ['CHANNEL_ID'])
+# GUILD_ID = int(os.environ['GUILD_ID'])
 PANTRY_KEY = os.environ['PANTRY_KEY']
 MONGO_HOST = os.environ['MONGO_HOST']
 MONGO_PORT = int(os.environ['MONGO_PORT'])
+MONGO_USERNAME = os.environ['MONGO_USERNAME']
+MONGO_PASSWORD = os.environ['MONGO_PASSWORD']
 MONGO_DB = os.environ['MONGO_DB']
 
 # Reference: https://www.youtube.com/@richardschwabe/videos
@@ -37,7 +40,11 @@ MONGO_DB = os.environ['MONGO_DB']
 #   command_prefix: the denoter for what the command starts with for this bot
 #   intents: idk
 bot = Bot(command_prefix="!", description="Channel Bedtime Bot", intents=Intents.all())
-mongo = Mongo(host=MONGO_HOST, port=MONGO_PORT, db=MONGO_DB)
+mongo_client = MongoClient(host=MONGO_HOST,
+                           port=MONGO_PORT,
+                           username=MONGO_USERNAME,
+                           password=MONGO_PASSWORD,
+                           db=MONGO_DB)
 session = Session()
 logger = Logger("bedtime_bot", filename="discord.log", stdout=True)
 
@@ -48,8 +55,50 @@ def bot_activity():
 
 @bot.event
 async def on_guild_join(guild):
-    mongo.create_or_update_guild(guild.id, {'guild_id': guild.id, 'name': guild.name, 'channel_id': guild.id})
+    logger.info("%s (id=%s): bot joined guild", guild.name, guild.id)
+    guild_settings_id = mongo_client.update_guild_settings(
+        guild_id=guild.id,
+        data={
+            "sleep_time": None,
+            "channel_id": None,
+            "enabled": False,
+            "triggered": False,
+            "kill_method": KillMethod.ALL.value,
+            "executions": 0,
+            "kills": 0
+        }
+    )
+    guild_id = mongo_client.update_guild(
+        guild_id=guild.id,
+        data={'name': guild.name, 'guild_settings_id': guild_settings_id}
+    )
+    logger.info("%s (id=%s): Created Mongo Guild Id=%s, Mongo Guild Settings Id=%s",
+                guild.name, guild.id, guild_id, guild_settings_id)
+    # Bot Message to Channel
+    system_channel = guild.system_channel
+    if system_channel:
+        await save_channel(guild.id, system_channel.id, f"Hello! {bot.user} has joined {guild.name}!")
+    else:
+        general_channel = discord_utils.get(guild.text_channels, name='general')
+        if general_channel is not None:
+            await save_channel(guild.id, general_channel.id, f"Hello! {bot.user} has joined {guild.name}!")
+        else:
+            logger.warning("%s (id=%s): No general/system channel found", guild.name, guild.id)
 
+
+@bot.event
+async def on_guild_remove(guild):
+    logger.info("%s (id=%s): bot left guild", guild.name, guild.id)
+    guild_delete = mongo_client.delete_guild(guild_id=guild.id)
+    guild_settings_delete = mongo_client.delete_guild_settings(guild_id=guild.id)
+    logger.info("%s (id=%s): Mongo Guild Delete=%s (%s), Mongo Guild Settings Delete=%s (%s)",
+                guild.name, guild.id, guild_delete.deleted_count, guild_delete.acknowledged,
+                guild_settings_delete.deleted_count, guild_settings_delete.acknowledged)
+
+
+@bot.event
+async def on_connect():
+    logger.info("Bot connected to Discord.")
 
 @bot.event
 async def on_ready():
@@ -64,10 +113,13 @@ async def on_ready():
     Returns:
         None
     """
-    session.channel = bot.get_channel(CHANNEL_ID)
-    await bot.tree.sync()
+    # TODO: remove session.channel messages
+    # session.channel = bot.get_channel(CHANNEL_ID)
+    logger.info("Channel Bedtime bot initialized. User: %s (Id: %s)", bot.user.name, bot.user.id)
+    synced = await bot.tree.sync()
+    logger.info(f"Synced {len(synced)} commands: {", ".join([command.name for command in synced])}")
     await bot.change_presence(activity=bot_activity(), status=Status.idle)
-    await session.channel.send(f"Hello! {bot.user} is now running!")
+    # await session.channel.send(f"Hello! {bot.user} is now running!")
     '''
     TODO: Embedded message, still testing
     # embed = Embed(
@@ -82,7 +134,8 @@ async def on_ready():
     # embed.add_field(name="Channels", value=len([x for x in bot.get_all_channels()]))
     # await session.channel.send(embed=embed)
     '''
-    logger.info("Channel Bedtime bot initialized. User: %s (Id: %s)", bot.user, bot.user.id)
+    guilds_str = ", ".join([f"{guild.name} (Id: {guild.id})" for guild in bot.guilds])
+    logger.info(f"Connected to {len(bot.guilds)} Servers: {guilds_str}")
 # TODO: REMOVE THIS IS FOR TESTING
     # await kill_task(KillMethod.ALL)
     # pass
@@ -126,30 +179,30 @@ async def kill_task(kill_type=None):
     A function that handles different kill methods based on the input kill type.
     """
     match kill_type:
-        case KillMethod.ALL:
+        case KillMethod.ALL.value:
             logger.info("KillLoop: Killing with all method.")
             voice_member_dict = get_all_users_in_active_voice_channels()
             for _, members in voice_member_dict.items():
                 for member in members:
                     await disconnect_member(member)
             logger.info("KillLoop: Done!\n%s", dict((k, [x.nick for x in v]) for k, v in voice_member_dict.items()))
-        case KillMethod.ALLBUTONE:
+        case KillMethod.ALLBUTONE.value:
             logger.info("KillLoop: Killing with all but one method.")
             voice_member_dict = get_all_users_in_active_voice_channels()
             disconnected_channel_members = {k: random.choice(v) for k, v in voice_member_dict.items() if len(v) > 1}
             for _, member in disconnected_channel_members.items():
                 await disconnect_member(member)
             logger.info("KillLoop: Done!\n%s", dict((k, v) for k, v in disconnected_channel_members.items()))
-        case KillMethod.TRICKLE:
+        case KillMethod.TRICKLE.value:
             logger.info("KillLoop: Killing with trickle method.")
 
-        case KillMethod.HALF:
+        case KillMethod.HALF.value:
             logger.info("KillLoop: Killing with half method.")
 
-        case KillMethod.RANDOMAMOUNT:
+        case KillMethod.RANDOMAMOUNT.value:
             logger.info("KillLoop: Killing with random amount method.")
 
-        case KillMethod.RANDOM:
+        case KillMethod.RANDOM.value:
             logger.info("KillLoop: Choosing random kill method.")
             kill_task(KillMethod.random_value())
         case _:
@@ -365,6 +418,39 @@ async def vote(ctx):
     This function votes for bedtime. It sends a message to the context object indicating that the vote has been received.
     """
     await ctx.send("Vote received.")
+
+
+@bot.hybrid_command(name='setchannel', description='Sets the text channel for the bot')
+async def setchannel(ctx, *, flags: SetChannelFlags):
+    """
+    Sets the text channel for the bot.
+    """
+    await save_channel(ctx.guild.id, flags.channel.id, "Mmmm, cozy. This is my new home.")
+    logger.info("%s (id=%s): SetChannel %s (id=%s)", ctx.guild.name, ctx.guild.id, flags.channel, flags.channel.id)
+    await ctx.send(f"Channel set: {flags.channel.mention}")
+
+
+async def save_channel(guild_id, channel_id=None, message=None):
+    """
+    Saves the channel id to the guild settings.
+    """
+    if channel_id:
+        mongo_client.update_guild_settings(guild_id=guild_id, data={'channel_id': channel_id})
+    if message:
+        await bot.get_channel(channel_id).send(message)
+
+
+async def send_message(message, guild_id=None, channel_id=None):
+    if channel_id:
+        await bot.get_channel(channel_id).send(message)
+    elif guild_id:
+        channel_id = mongo_client.get_guild_settings(guild_id=guild_id).get('channel_id', None)
+        if channel_id:
+            await bot.get_channel(channel_id).send(message)
+        else:
+            logger.error("Guild id=%s: No channel id found. Skipping message...", guild_id)
+    else:
+        logger.error("No channel id or guild id provided. Skipping message...")
 
 
 if __name__ == "__main__":
