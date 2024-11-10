@@ -2,21 +2,22 @@
 This module contains the Mongo class.
 """
 from pymongo import MongoClient as PyMongoClient
-from customexceptions import MongoError
+# from customexceptions import MongoError
 from datetime import datetime
 
 class MongoClient:
     """
     This class represents the Mongo client.
     """
-    def __init__(self, host="localhost", port=27017, username="", password="", db="discord_bot"):
+    def __init__(self, host="localhost", port=27017, username="user", password="password", db="discord_bot", timeout=10000):
         self.client = PyMongoClient(
             host=host,
             port=port,
             username=username,
             password=password,
             authSource=db,
-            authMechanism="SCRAM-SHA-256"
+            authMechanism="SCRAM-SHA-256",
+            serverSelectionTimeoutMS=timeout
         )
         self.db = self.client[db]
         # self.collection = self.db[collection]
@@ -65,6 +66,11 @@ class MongoClient:
             return self.get_collection('guild_settings').delete_one({'guild_id': guild_id})
         if settings_id is not None:
             return self.get_collection('guild_settings').delete_one({'_id': settings_id})
+        
+    ### PURGE METHODS ###
+    def purge_all(self):
+        self.get_collection('guilds').delete_many({})
+        self.get_collection('guild_settings').delete_many({})
 
 # TODO: implement validations for each operation
 

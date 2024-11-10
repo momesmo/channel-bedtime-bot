@@ -39,14 +39,20 @@ MONGO_DB = os.environ['MONGO_DB']
 # Sets up the Bot commands
 #   command_prefix: the denoter for what the command starts with for this bot
 #   intents: idk
-bot = Bot(command_prefix="!", description="Channel Bedtime Bot", intents=Intents.all())
-mongo_client = MongoClient(host=MONGO_HOST,
-                           port=MONGO_PORT,
-                           username=MONGO_USERNAME,
-                           password=MONGO_PASSWORD,
-                           db=MONGO_DB)
-session = Session()
 logger = Logger("bedtime_bot", filename="discord.log", stdout=True)
+bot = Bot(command_prefix="!", description="Channel Bedtime Bot", intents=Intents.all())
+try:
+    mongo_client = MongoClient(host=MONGO_HOST,
+                               port=MONGO_PORT,
+                               username=MONGO_USERNAME,
+                               password=MONGO_PASSWORD,
+                               db=MONGO_DB)
+    print(f"MongoDB connected. Server Info: {mongo_client.client.server_info()}")
+except Exception as e:
+    logger.error("Error connecting to MongoDB: %s", e)
+    logger.error("Exiting...")
+    exit(1)
+session = Session()
 
 
 def bot_activity():
