@@ -2,6 +2,7 @@
 This module contains the Mongo class.
 """
 from pymongo import MongoClient as PyMongoClient
+# TODO: figure out why this doesn't work for pytest
 # from customexceptions import MongoError
 from datetime import datetime
 
