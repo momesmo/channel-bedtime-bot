@@ -14,12 +14,12 @@ from discord import app_commands, Intents, Object as DiscordObject, Embed, Voice
 from discord.ext import tasks
 from discord.ext.commands import Bot
 
-from customflags import BedtimeFlags, SetChannelFlags
-from customexceptions import ValidationError
-from customenums import KillMethod
-from session import Session
-from logger import Logger
-from mongo_client import MongoClient
+from helpers.customflags import BedtimeFlags, SetChannelFlags
+from helpers.customexceptions import ValidationError
+from helpers.customenums import KillMethod
+from helpers.session import Session
+from helpers.logger import Logger
+from helpers.mongo_client import MongoClient
 
 # TODO: figure out pylint in Github Actions failures
 

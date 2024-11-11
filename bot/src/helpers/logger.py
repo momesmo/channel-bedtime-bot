@@ -5,7 +5,7 @@ import os
 import sys
 import logging
 import logging.handlers
-from customexceptions import LoggerError
+from helpers.customexceptions import LoggerError
 
 
 # TODO: redo logger with discord integration reference: https://www.youtube.com/watch?v=ilNStiHY0Io&list=PLESMQx4LeD3N0-KKPPDaToZhBsom2E_Ju&index=3

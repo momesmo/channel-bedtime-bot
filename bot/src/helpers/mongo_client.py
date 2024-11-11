@@ -2,21 +2,24 @@
 This module contains the Mongo class.
 """
 from pymongo import MongoClient as PyMongoClient
-# TODO: figure out why this doesn't work for pytest
-# from customexceptions import MongoError
+from helpers.customexceptions import MongoError
 from datetime import datetime
+
+from helpers.logger import Logger
 
 class MongoClient:
     """
     This class represents the Mongo client.
     """
-    def __init__(self, host="localhost", port=27017, username="user", password="password", db="discord_bot", timeout=10000):
+    def __init__(self, host="localhost", port=27017, username="user", password="password", db="discord_bot", timeout=10000, auth_source=None):
+        logger = Logger("bedtime_mongo", filename="discord.log", stdout=True)
+        logger.info(f"MongoClient - host: {host}, port: {port}, username: {username}, password: {password}, db: {db}, timeout: {timeout}, auth_source: {auth_source}")
         self.client = PyMongoClient(
             host=host,
             port=port,
             username=username,
             password=password,
-            authSource=db,
+            authSource=(db if auth_source is None else auth_source),
             authMechanism="SCRAM-SHA-256",
             serverSelectionTimeoutMS=timeout
         )
