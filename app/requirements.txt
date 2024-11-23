@@ -1,0 +1,6 @@
+discord.py
+# audioop-lts
+pymongo
+# Requests
+testcontainers
+pytest

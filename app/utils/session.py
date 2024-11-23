@@ -4,7 +4,7 @@ This module contains the session class that stores the state of the bot.
 from dataclasses import dataclass
 from datetime import time, datetime, timezone
 
-from customenums import KillMethod
+from utils.enums import KillMethod
 
 
 @dataclass

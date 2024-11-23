@@ -14,39 +14,34 @@ from discord import app_commands, Intents, Object as DiscordObject, Embed, Voice
 from discord.ext import tasks
 from discord.ext.commands import Bot
 
-from helpers.customflags import BedtimeFlags, SetChannelFlags
-from helpers.customexceptions import ValidationError
-from helpers.customenums import KillMethod
-from helpers.session import Session
-from helpers.logger import Logger
-from helpers.mongo_client import MongoClient
+from config.settings import Settings
+from utils.flags import BedtimeFlags, SetChannelFlags
+from utils.exceptions import ValidationError
+from utils.enums import KillMethod
+from utils.session import Session
+from utils.logger import Logger
+from db.mongo_client import MongoClient
 
 # TODO: figure out pylint in Github Actions failures
-
-# TODO: figure out dotenv for direnv
-BOT_TOKEN = os.environ['BOT_TOKEN']
-# CHANNEL_ID = int(os.environ['CHANNEL_ID'])
-# GUILD_ID = int(os.environ['GUILD_ID'])
-PANTRY_KEY = os.environ['PANTRY_KEY']
-MONGO_HOST = os.environ['MONGO_HOST']
-MONGO_PORT = int(os.environ['MONGO_PORT'])
-MONGO_USERNAME = os.environ['MONGO_USERNAME']
-MONGO_PASSWORD = os.environ['MONGO_PASSWORD']
-MONGO_DB = os.environ['MONGO_DB']
 
 # Reference: https://www.youtube.com/@richardschwabe/videos
 
 # Sets up the Bot commands
 #   command_prefix: the denoter for what the command starts with for this bot
 #   intents: idk
-logger = Logger("bedtime_bot", filename="discord.log", stdout=True)
-bot = Bot(command_prefix="!", description="Channel Bedtime Bot", intents=Intents.all())
+logger = Logger("bedtime_bot",
+                filename=Settings.LOG_FILE,
+                level=Settings.LOG_LEVEL,
+                stdout=True)
+bot = Bot(command_prefix="!",
+          description="Channel Bedtime Bot",
+          intents=Intents.all())
 try:
-    mongo_client = MongoClient(host=MONGO_HOST,
-                               port=MONGO_PORT,
-                               username=MONGO_USERNAME,
-                               password=MONGO_PASSWORD,
-                               db=MONGO_DB)
+    mongo_client = MongoClient(host=Settings.MONGO_HOST,
+                               port=Settings.MONGO_PORT,
+                               username=Settings.MONGO_USERNAME,
+                               password=Settings.MONGO_PASSWORD,
+                               db=Settings.MONGO_DB)
     print(f"MongoDB connected. Server Info: {mongo_client.client.server_info()}")
 except Exception as e:
     logger.error("Error connecting to MongoDB: %s", e)
@@ -271,7 +266,7 @@ async def after_time_check_loop():
     await session.channel.send(f"Stats:\nCheck Executions: {session.executions}\nKills: {session.kills}")
 
 
-# Before loop helpers
+# Before loop utils
 def time_seconds(t):
     """
     A function to calculate the total number of seconds represented by the input time object.
@@ -462,4 +457,4 @@ async def send_message(message, guild_id=None, channel_id=None):
 if __name__ == "__main__":
     # Running the bot
     logger.info("Starting bot run...")
-    bot.run(BOT_TOKEN)
+    bot.run(Settings.BOT_TOKEN)

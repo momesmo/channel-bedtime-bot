@@ -2,10 +2,10 @@
 This module contains the Mongo class.
 """
 from pymongo import MongoClient as PyMongoClient
-from helpers.customexceptions import MongoError
+from utils.exceptions import MongoError
 from datetime import datetime
 
-from helpers.logger import Logger
+from utils.logger import Logger
 
 class MongoClient:
     """

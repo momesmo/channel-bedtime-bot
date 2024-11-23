@@ -4,7 +4,8 @@ This module contains the custom flag class.
 from datetime import datetime
 from discord.ext import commands
 from discord import TextChannel
-from customexceptions import ValidationError
+from utils.exceptions import ValidationError
+from config.constants import TIME_FORMAT
 
 
 class BedtimeFlags(commands.FlagConverter):
@@ -34,7 +35,7 @@ class BedtimeFlags(commands.FlagConverter):
         str_time = params.get("time_str") or f"{params.get('hour')}:{params.get('minute')}:{params.get('second')}"
         if str_time.count(':') == 1:
             str_time += ':00'
-        return datetime.strptime(str_time, '%H:%M:%S').time()
+        return datetime.strptime(str_time, TIME_FORMAT).time()
 
 class SetChannelFlags(commands.FlagConverter):
     """

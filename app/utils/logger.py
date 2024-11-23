@@ -5,7 +5,8 @@ import os
 import sys
 import logging
 import logging.handlers
-from helpers.customexceptions import LoggerError
+from utils.exceptions import LoggerError
+from config.constants import DATETIME_FORMAT
 
 
 # TODO: redo logger with discord integration reference: https://www.youtube.com/watch?v=ilNStiHY0Io&list=PLESMQx4LeD3N0-KKPPDaToZhBsom2E_Ju&index=3
@@ -21,8 +22,7 @@ class Logger(logging.Logger):
         if filename:
             self.pid = os.getpid()
             file_handler = logging.handlers.RotatingFileHandler(filename, maxBytes=1024*1024*32, backupCount=5)
-            date_format = "%Y-%m-%d %H:%M:%S"
-            formatter = logging.Formatter("[{asctime}] [{levelname:<8}] [{name}:%s]: {message}" % self.pid, datefmt=date_format, style="{")
+            formatter = logging.Formatter("[{asctime}] [{levelname:<8}] [{name}:%s]: {message}" % self.pid, datefmt=DATETIME_FORMAT, style="{")
             file_handler.setFormatter(formatter)
             self.addHandler(file_handler)
         if stdout:

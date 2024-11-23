@@ -1,26 +1,61 @@
-version: '3.7'
 services:
-  mongo:
-  # TODO: look into for initialization: https://stackoverflow.com/questions/42912755/how-to-create-a-db-for-mongodb-container-on-start-up
-    build:
-      context: mongo
-      dockerfile: Dockerfile.mongo
-    volumes:
-      - /sys/fs/cgroup:/sys/fs/cgroup:rw
-    tty: true
-    cgroup: host
-    cap_add:
-      - SYS_ADMIN
-      - NET_ADMIN
-    env_file:
-      - .envrc
-    ports:
-      - 27017:27017
   bot:
     build:
-      context: bot
+      context: app
       dockerfile: Dockerfile
-    env_file:
-      - .envrc
+    # image: python:3.12-alpine
+    container_name: bot
+    # restart: always
+    environment:
+      BOT_TOKEN: ${BOT_TOKEN}
+      MONGO_HOST: ${MONGO_HOST}
+      MONGO_PORT: ${MONGO_PORT}
+      MONGO_USERNAME: ${MONGO_USERNAME}
+      MONGO_PASSWORD: ${MONGO_PASSWORD}
+      MONGO_DB: ${MONGO_DB}
+    volumes:
+      - ./app:/app
     depends_on:
-      - mongo
+      - mongodb
+    networks:
+      - backend
+  mongodb:
+    image: mongo:latest
+    container_name: mongodb
+    restart: always
+    ports:
+      - "27017:27017"
+    environment:
+      MONGO_INITDB_ROOT_USERNAME: ${MONGO_INITDB_ROOT_USERNAME}
+      MONGO_INITDB_ROOT_PASSWORD: ${MONGO_INITDB_ROOT_PASSWORD}
+    volumes:
+      - mongodb_data:/data/db
+      - ./db-init/mongo-init.js:/docker-entrypoint-initdb.d/mongo-init.js:ro
+    networks:
+      - backend
+
+  mongo-express:
+    image: mongo-express:latest
+    container_name: mongo-express
+    restart: always
+    ports:
+      - "8081:8081"
+    environment:
+      ME_CONFIG_BASICAUTH_USERNAME: ${ME_CONFIG_BASICAUTH_USERNAME}
+      ME_CONFIG_BASICAUTH_PASSWORD: ${ME_CONFIG_BASICAUTH_PASSWORD}
+      ME_CONFIG_MONGODB_ADMINUSERNAME: ${ME_CONFIG_MONGODB_ADMINUSERNAME}
+      ME_CONFIG_MONGODB_ADMINPASSWORD: ${ME_CONFIG_MONGODB_ADMINPASSWORD}
+      ME_CONFIG_MONGODB_SERVER: ${ME_CONFIG_MONGODB_SERVER}
+      ME_CONFIG_MONGODB_URL: mongodb://${ME_CONFIG_MONGODB_ADMINUSERNAME}:${ME_CONFIG_MONGODB_ADMINPASSWORD}@${ME_CONFIG_MONGODB_SERVER}:27017/
+    depends_on:
+      - mongodb
+    networks:
+      - backend
+
+volumes:
+  mongodb_data:
+    name: mongodb_data
+
+networks:
+  backend:
+    driver: bridge
