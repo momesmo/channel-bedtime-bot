@@ -4,7 +4,7 @@ import os
 import re
 import pytest
 from testcontainers.mongodb import MongoDbContainer
-from helpers.mongo_client import MongoClient
+from app.db.mongo_client import MongoClient
 
 mongo_container = MongoDbContainer("mongo:latest")
 

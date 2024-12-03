@@ -8,7 +8,7 @@ services:
     # restart: always
     environment:
       BOT_TOKEN: ${BOT_TOKEN}
-      MONGO_HOST: ${MONGO_HOST}
+      MONGO_HOST: mongodb
       MONGO_PORT: ${MONGO_PORT}
       MONGO_USERNAME: ${MONGO_USERNAME}
       MONGO_PASSWORD: ${MONGO_PASSWORD}
